@@ -1,0 +1,7 @@
+{
+  "name": "Smart Log Compliance App",
+  "description": "An enterprise-grade log compliance and risk stratification platform leveraging Gemini 3 Pro.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
