@@ -5,25 +5,26 @@ import { InspectionRecord, TrainingModule, RiskLevel, FaultCategory } from "../t
 // Initialize Gemini client
 // Note: API_KEY is loaded from process.env (Node) or Vite's import.meta.env (Client)
 const getApiKey = () => {
+  // Try direct Vite env first (Netlify build time)
   // @ts-ignore
   if (typeof import.meta !== 'undefined' && import.meta.env) {
     // @ts-ignore
-    return import.meta.env.VITE_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+    const key = import.meta.env.VITE_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+    if (key && key !== 'PLACEHOLDER_API_KEY') return key;
   }
-  // Fallback for Node.js environments (e.g. testing)
+
+  // Try process.env (Node context or some build setups)
   // @ts-ignore
   if (typeof process !== 'undefined' && process.env) {
     // @ts-ignore
-    return process.env.API_KEY || process.env.GEMINI_API_KEY;
+    const key = process.env.API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_API_KEY;
+    if (key) return key;
   }
+
   return undefined;
 };
 
 const apiKey = getApiKey();
-if (!apiKey) {
-  console.warn("Gemini API Key is missing. Please set VITE_API_KEY or VITE_GEMINI_API_KEY in your .env file.");
-}
-
 const ai = new GoogleGenAI({ apiKey: apiKey || "dummy_key" });
 
 // Utility Function: Cleans up AI responses by extracting valid JSON from text.
@@ -37,49 +38,30 @@ function extractJson(text: string): string {
 // AI acts like a hotel safety auditor: Assigns a risk level, Categorizes the fault, Describes the fault technically, Suggests specific corrective steps.
 export const analyzeInspectionPhoto = async (base64Image: string): Promise<Partial<InspectionRecord>> => {
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-1.5-pro',
-      contents: {
-        parts: [
-          {
-            inlineData: {
-              mimeType: "image/jpeg",
-              data: base64Image
-            }
-          },
-          {
-            text: `Act as a 5-Star Hotel Safety Auditor. 
-            Perform risk stratification, categorize faults, 
-            and provide hyper-specific remediation steps. 
-            Assign a risk level (HIGH, MEDIUM, LOW).
-            Categorize the fault (Hygiene, Equipment, Infrastructure, Cross-Contamination, Storage).
-            Describe the fault technically.
-            Suggest 3 specific corrective steps (e.g., exact chemicals, repair methods).
-            Response MUST be valid JSON.`
-          }
-        ]
-      },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            riskLevel: { type: Type.STRING, enum: [RiskLevel.HIGH, RiskLevel.MEDIUM, RiskLevel.LOW] },
-            category: { type: Type.STRING, enum: [FaultCategory.HYGIENE, FaultCategory.EQUIPMENT, FaultCategory.INFRASTRUCTURE, FaultCategory.CROSS_CONTAMINATION, FaultCategory.STORAGE] },
-            faultDescription: { type: Type.STRING },
-            remediationSteps: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            }
-          },
-          required: ["riskLevel", "category", "faultDescription", "remediationSteps"]
-        }
-      }
-    });
+    const genModel = ai.getGenerativeModel({ model: "gemini-1.5-flash" }); // Using Flash for faster, more stable web responses
 
-    const text = response.text || "{}";
-    const result = JSON.parse(extractJson(text));
-    return result;
+    const promptText = `Act as a 5-Star Hotel Safety Auditor. 
+    Analyze this inspection photo for safety, hygiene, or infrastructure faults.
+    Assign a risk level (High, Medium, Low).
+    Categorize the fault (Hygiene, Equipment, Infrastructure, Cross-Contamination, Storage).
+    Describe the fault technically.
+    Suggest 3 specific corrective remediation steps.
+    Response must be a SINGLE valid JSON object.`;
+
+    const modelResult = await genModel.generateContent([
+      {
+        inlineData: {
+          mimeType: "image/jpeg",
+          data: base64Image
+        }
+      },
+      { text: promptText }
+    ]);
+
+    const response = await modelResult.response;
+    const text = response.text();
+    const parsedData = JSON.parse(extractJson(text));
+    return parsedData;
 
   } catch (error) {
     console.error("Gemini Analysis Error:", error);
