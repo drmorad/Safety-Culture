@@ -307,6 +307,7 @@ const InspectionForm: React.FC<InspectionFormProps> = ({
               <div>
                 <label className="block text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4">Lead Auditor</label>
                 <select
+                  title="Select Lead Auditor"
                   className="w-full pl-5 pr-10 py-5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 focus:border-blue-500 focus:outline-none bg-slate-50/50 dark:bg-slate-800/50 font-black text-slate-800 dark:text-slate-200 transition-all appearance-none"
                   value={formData.auditorName}
                   onChange={(e) => setFormData({ ...formData, auditorName: e.target.value })}
@@ -318,6 +319,7 @@ const InspectionForm: React.FC<InspectionFormProps> = ({
               <div>
                 <label className="block text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4">Hotel Property</label>
                 <select
+                  title="Select Hotel Property"
                   className="w-full pl-5 pr-10 py-5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 focus:border-blue-500 focus:outline-none bg-slate-50/50 dark:bg-slate-800/50 font-black text-slate-800 dark:text-slate-200 transition-all appearance-none"
                   value={selectedProperty}
                   onChange={handlePropertyChange}
@@ -330,6 +332,7 @@ const InspectionForm: React.FC<InspectionFormProps> = ({
               <div>
                 <label className="block text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4">Audit Section</label>
                 <select
+                  title="Select Audit Section"
                   className="w-full pl-5 pr-10 py-5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 focus:border-blue-500 focus:outline-none bg-slate-50/50 dark:bg-slate-800/50 font-black text-slate-800 dark:text-slate-200 transition-all appearance-none"
                   value={selectedLocation}
                   onChange={handleLocationChange}
@@ -361,7 +364,9 @@ const InspectionForm: React.FC<InspectionFormProps> = ({
                 <div className="text-center"><p className="text-xl tracking-tight leading-none">{editingRecord ? 'Retake Audit Evidence' : 'Launch Optical Engine'}</p></div>
               </button>
 
-              <button onClick={() => fileInputRef.current?.click()} className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-blue-50/30 dark:hover:bg-blue-900/20 text-slate-700 dark:text-slate-200 font-black py-8 px-8 rounded-[2rem] transition-all shadow-sm flex flex-col items-center justify-center gap-4 active:scale-95 border-b-[6px] border-slate-100 dark:border-slate-600 active:border-b-0">
+              <button
+                title="Import Image from Device"
+                onClick={() => fileInputRef.current?.click()} className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-blue-50/30 dark:hover:bg-blue-900/20 text-slate-700 dark:text-slate-200 font-black py-8 px-8 rounded-[2rem] transition-all shadow-sm flex flex-col items-center justify-center gap-4 active:scale-95 border-b-[6px] border-slate-100 dark:border-slate-600 active:border-b-0">
                 <div className="w-14 h-14 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center"><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg></div>
                 <div className="text-center"><p className="text-xl tracking-tight leading-none">Import Image Asset</p></div>
               </button>
@@ -412,7 +417,9 @@ const InspectionForm: React.FC<InspectionFormProps> = ({
                 {capabilities?.zoom ? (
                   <div className="space-y-2">
                     <div className="flex justify-between items-center"><span className="text-[8px] text-white/40 font-black uppercase">Focal: {zoom.toFixed(1)}x</span></div>
-                    <input type="range" min={capabilities.zoom.min} max={capabilities.zoom.max} step="0.1" value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} className="w-full accent-blue-500 h-1.5 rounded-full bg-white/10 appearance-none cursor-pointer" />
+                    <input
+                      title="Adjust Focal Zoom"
+                      type="range" min={capabilities.zoom.min} max={capabilities.zoom.max} step="0.1" value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} className="w-full accent-blue-500 h-1.5 rounded-full bg-white/10 appearance-none cursor-pointer" />
                   </div>
                 ) : (
                   <div className="py-2 border-b border-white/5 opacity-40"><span className="text-[8px] text-white/40 font-black uppercase">Digital Zoom N/A</span></div>
@@ -445,6 +452,7 @@ const InspectionForm: React.FC<InspectionFormProps> = ({
               <div className="flex justify-center order-first md:order-none">
                 <button
                   onClick={handleCapture}
+                  title="Capture Inspection Photo"
                   className="w-32 h-32 bg-white rounded-full border-[12px] border-slate-900 flex items-center justify-center hover:scale-105 active:scale-90 transition-all shadow-[0_0_80px_rgba(255,255,255,0.2)] group"
                 >
                   <div className="w-20 h-20 bg-blue-600 rounded-full group-hover:bg-blue-500 transition-colors shadow-inner" />

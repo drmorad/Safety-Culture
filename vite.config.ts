@@ -17,6 +17,19 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       'process.env.API_KEY': JSON.stringify(env.API_KEY)
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom'],
+            'vendor-pdf': ['@react-pdf/renderer'],
+            'vendor-charts': ['recharts'],
+            'vendor-ai': ['@google/genai'],
+          }
+        }
+      },
+      chunkSizeWarningLimit: 1000,
     }
   };
 });

@@ -1,11 +1,14 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
-import InspectionForm from './components/InspectionForm';
-import IssueLogs from './components/IssueLogs';
-import TrainingCenter from './components/TrainingCenter';
-import AuditorAssistant from './components/AuditorAssistant';
+
+// Lazy Load Secondary Views for better Performance
+const InspectionForm = lazy(() => import('./components/InspectionForm'));
+const IssueLogs = lazy(() => import('./components/IssueLogs'));
+const TrainingCenter = lazy(() => import('./components/TrainingCenter'));
+const AuditorAssistant = lazy(() => import('./components/AuditorAssistant'));
+
 import LoadingScreen from './components/LoadingScreen';
 import { InspectionRecord, RiskLevel, FaultCategory, ChatMessage, UserSession } from './types';
 import { forensicService } from './services/forensicService';
@@ -94,11 +97,8 @@ const App: React.FC = () => {
   });
 
   useEffect(() => {
-    // Simulate system initialization check
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 2000);
-    return () => clearTimeout(timer);
+    // Faster initialization
+    setLoading(false);
   }, []);
 
   // Sync state to localStorage
@@ -214,28 +214,40 @@ const App: React.FC = () => {
         );
       case 'inspect':
         return (
-          <InspectionForm
-            onSave={handleSaveInspection}
-            initialAuditor={currentAuditor}
-            existingLocations={locations}
-            properties={properties}
-            editingRecord={editingRecord}
-            onCancelEdit={() => { setEditingRecord(null); setActiveTab('logs'); }}
-          />
+          <Suspense fallback={<div className="flex items-center justify-center p-20 text-slate-400 font-black uppercase text-xs tracking-widest animate-pulse">Initializing Optical Engine...</div>}>
+            <InspectionForm
+              onSave={handleSaveInspection}
+              initialAuditor={currentAuditor}
+              existingLocations={locations}
+              properties={properties}
+              editingRecord={editingRecord}
+              onCancelEdit={() => { setEditingRecord(null); setActiveTab('logs'); }}
+            />
+          </Suspense>
         );
       case 'logs':
         return (
-          <IssueLogs
-            records={records}
-            onDelete={handleDeleteRecord}
-            onUpdateStatus={handleUpdateStatus}
-            onEdit={handleEditRecord}
-          />
+          <Suspense fallback={<div className="flex items-center justify-center p-20 text-slate-400 font-black uppercase text-xs tracking-widest animate-pulse">Accessing Audit Trail...</div>}>
+            <IssueLogs
+              records={records}
+              onDelete={handleDeleteRecord}
+              onUpdateStatus={handleUpdateStatus}
+              onEdit={handleEditRecord}
+            />
+          </Suspense>
         );
       case 'training':
-        return <TrainingCenter records={records} />;
+        return (
+          <Suspense fallback={<div className="flex items-center justify-center p-20 text-slate-400 font-black uppercase text-xs tracking-widest animate-pulse">Loading Training Hub...</div>}>
+            <TrainingCenter records={records} />
+          </Suspense>
+        );
       case 'assistant':
-        return <AuditorAssistant records={records} chatHistory={chatHistory} setChatHistory={setChatHistory} />;
+        return (
+          <Suspense fallback={<div className="flex items-center justify-center p-20 text-slate-400 font-black uppercase text-xs tracking-widest animate-pulse">Consulting AI Assistant...</div>}>
+            <AuditorAssistant records={records} chatHistory={chatHistory} setChatHistory={setChatHistory} />
+          </Suspense>
+        );
       default:
         return <Dashboard records={records} onReset={handleResetSystem} properties={properties} onAddProperty={handleAddProperty} onUpdateProperty={handleUpdateProperty} onDeleteProperty={handleDeleteProperty} />;
     }

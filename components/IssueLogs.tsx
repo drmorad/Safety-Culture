@@ -147,7 +147,9 @@ const IssueLogs: React.FC<IssueLogsProps> = ({ records, onDelete, onUpdateStatus
                 <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase leading-none">{selectedRecord.propertyName}</h3>
                 <p className="text-slate-500 dark:text-slate-400 font-bold uppercase text-xs tracking-widest mt-1">{selectedRecord.category} Violation</p>
               </div>
-              <button onClick={() => setSelectedRecord(null)} className="w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-all shadow-sm border border-slate-100 dark:border-slate-700">
+              <button
+                title="Close Review Panel"
+                onClick={() => setSelectedRecord(null)} className="w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-all shadow-sm border border-slate-100 dark:border-slate-700">
                 <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
