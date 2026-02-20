@@ -49,3 +49,28 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
+
+export interface AuditHistoryEntry {
+  id: string;
+  recordId: string;
+  timestamp: string;
+  userId: string;
+  action: 'create' | 'update' | 'status_change';
+  diff?: any;
+  snapshot: InspectionRecord;
+}
+
+export interface SignatureData {
+  id: string;
+  recordId: string;
+  auditorName: string;
+  timestamp: string;
+  signatureBase64: string;
+  pdfHash?: string;
+}
+
+export interface UserSession {
+  id: string;
+  name: string;
+  role: 'Senior Officer' | 'Staff';
+}

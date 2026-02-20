@@ -7,14 +7,20 @@ import IssueLogs from './components/IssueLogs';
 import TrainingCenter from './components/TrainingCenter';
 import AuditorAssistant from './components/AuditorAssistant';
 import LoadingScreen from './components/LoadingScreen';
-import { InspectionRecord, RiskLevel, FaultCategory, ChatMessage } from './types';
+import { InspectionRecord, RiskLevel, FaultCategory, ChatMessage, UserSession } from './types';
+import { forensicService } from './services/forensicService';
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<InspectionRecord | null>(null);
-  
+  const [currentUser] = useState<UserSession>({
+    id: 'off-001',
+    name: 'Dr Mourad Saudi',
+    role: 'Senior Officer'
+  });
+
   // Theme State
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -37,22 +43,21 @@ const App: React.FC = () => {
   const toggleTheme = () => setDarkMode(!darkMode);
 
   const defaultLocations = [
-    'Main Kitchen', 'Guest Rooms', 'Lobby Area', 'Pool & Spa', 
-    'Laundry Facility', 'Chemical Storage', 'Cold Storage A', 
+    'Main Kitchen', 'Guest Rooms', 'Lobby Area', 'Pool & Spa',
+    'Laundry Facility', 'Chemical Storage', 'Cold Storage A',
     'Service Bar', 'Back of House', 'Staff Canteen'
   ];
 
   const defaultProperties = ["Property Alpha", "Property Beta", "Property Gamma"];
 
-  // LAZY INITIALIZATION: Prevents data loss on refresh by loading before first render
-  const [records, setRecords] = useState<InspectionRecord[]>(() => {
-    try {
-      const saved = localStorage.getItem('hg_records');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
+  // INITIALIZATION: Load from Forensic IndexedDB
+  useEffect(() => {
+    forensicService.getAllRecords().then(data => {
+      if (data.length > 0) setRecords(data);
+    });
+  }, []);
+
+  const [records, setRecords] = useState<InspectionRecord[]>([]);
 
   const [currentAuditor, setCurrentAuditor] = useState(() => {
     return localStorage.getItem('hg_auditor') || 'Lead Auditor';
@@ -117,7 +122,13 @@ const App: React.FC = () => {
     localStorage.setItem('hg_chat_history', JSON.stringify(chatHistory));
   }, [chatHistory]);
 
-  const handleSaveInspection = (record: InspectionRecord) => {
+  const handleSaveInspection = async (record: InspectionRecord) => {
+    const isNew = !records.some(r => r.id === record.id);
+
+    // Save to Forensic IndexedDB (Append-only history within)
+    await forensicService.saveRecord(record, currentUser, isNew);
+
+    // Update local state
     setRecords(prevRecords => {
       const index = prevRecords.findIndex(r => r.id === record.id);
       if (index !== -1) {
@@ -127,9 +138,9 @@ const App: React.FC = () => {
       }
       return [record, ...prevRecords];
     });
-    
+
     setCurrentAuditor(record.auditorName);
-    
+
     if (record.location && !locations.includes(record.location)) {
       setLocations(prev => [...prev, record.location].sort());
     }
@@ -137,7 +148,7 @@ const App: React.FC = () => {
     if (record.propertyName && !properties.includes(record.propertyName)) {
       setProperties(prev => [...prev, record.propertyName].sort());
     }
-    
+
     setEditingRecord(null);
     setActiveTab('logs');
   };
@@ -147,8 +158,9 @@ const App: React.FC = () => {
     setActiveTab('inspect');
   };
 
-  const handleDeleteRecord = (id: string) => {
-    if (confirm('Permanently delete this audit log?')) {
+  const handleDeleteRecord = async (id: string) => {
+    if (confirm('Permanently delete this record? History will remain in forensic logs.')) {
+      await forensicService.deleteRecord(id);
       setRecords(prev => prev.filter(r => r.id !== id));
     }
   };
@@ -174,8 +186,9 @@ const App: React.FC = () => {
     }
   };
 
-  const handleResetSystem = () => {
-    if (confirm('CRITICAL: Wiping all data. Continue?')) {
+  const handleResetSystem = async () => {
+    if (confirm('CRITICAL: Wiping all data including forensic logs. Continue?')) {
+      await forensicService.clearAll();
       localStorage.clear();
       setRecords([]);
       setLocations(defaultLocations);
@@ -190,9 +203,9 @@ const App: React.FC = () => {
     switch (activeTab) {
       case 'dashboard':
         return (
-          <Dashboard 
-            records={records} 
-            onReset={handleResetSystem} 
+          <Dashboard
+            records={records}
+            onReset={handleResetSystem}
             properties={properties}
             onAddProperty={handleAddProperty}
             onUpdateProperty={handleUpdateProperty}
@@ -201,10 +214,10 @@ const App: React.FC = () => {
         );
       case 'inspect':
         return (
-          <InspectionForm 
-            onSave={handleSaveInspection} 
-            initialAuditor={currentAuditor} 
-            existingLocations={locations} 
+          <InspectionForm
+            onSave={handleSaveInspection}
+            initialAuditor={currentAuditor}
+            existingLocations={locations}
             properties={properties}
             editingRecord={editingRecord}
             onCancelEdit={() => { setEditingRecord(null); setActiveTab('logs'); }}
@@ -212,10 +225,10 @@ const App: React.FC = () => {
         );
       case 'logs':
         return (
-          <IssueLogs 
-            records={records} 
-            onDelete={handleDeleteRecord} 
-            onUpdateStatus={handleUpdateStatus} 
+          <IssueLogs
+            records={records}
+            onDelete={handleDeleteRecord}
+            onUpdateStatus={handleUpdateStatus}
             onEdit={handleEditRecord}
           />
         );
@@ -232,20 +245,20 @@ const App: React.FC = () => {
     <>
       {loading && <LoadingScreen />}
       <div className={`flex bg-slate-50 dark:bg-slate-950 h-screen overflow-hidden relative transition-colors duration-500 ${loading ? 'opacity-0' : 'opacity-100'}`}>
-        <Sidebar 
-          activeTab={activeTab} 
+        <Sidebar
+          activeTab={activeTab}
           setActiveTab={(tab) => {
             if (tab !== 'inspect') setEditingRecord(null);
             setActiveTab(tab);
             setIsSidebarOpen(false);
-          }} 
-          auditorName={currentAuditor} 
+          }}
+          auditorName={currentAuditor}
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           isDarkMode={darkMode}
           toggleTheme={toggleTheme}
         />
-        
+
         <main className="flex-1 overflow-y-auto p-4 pt-20 md:p-12 md:pt-12 relative w-full">
           <div className="max-w-7xl mx-auto pb-24 md:pb-0">
             {renderContent()}
@@ -253,7 +266,8 @@ const App: React.FC = () => {
         </main>
 
         <div className="fixed bottom-6 right-6 no-print md:hidden z-20">
-          <button 
+          <button
+            title="Create New Inspection"
             onClick={() => { setEditingRecord(null); setActiveTab('inspect'); setIsSidebarOpen(false); }}
             className="w-16 h-16 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all ring-4 ring-white/20"
           >
@@ -263,13 +277,15 @@ const App: React.FC = () => {
 
         {/* Mobile Header Overlay to Toggle Sidebar */}
         <div className="fixed top-0 left-0 right-0 p-4 flex justify-between items-center md:hidden z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-           <div className="flex items-center gap-2">
-             <div className="w-8 h-8 bg-slate-900 dark:bg-black rounded-lg flex items-center justify-center text-white font-black text-sm">HG</div>
-             <span className="font-black text-slate-800 dark:text-white tracking-tight">HotelGuard</span>
-           </div>
-           <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-300">
-             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-           </button>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-slate-900 dark:bg-black rounded-lg flex items-center justify-center text-white font-black text-sm">SC</div>
+            <span className="font-black text-slate-800 dark:text-white tracking-tight">Safety Culture</span>
+          </div>
+          <button
+            title="Toggle Menu"
+            onClick={() => setIsSidebarOpen(true)} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-300">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
         </div>
       </div>
     </>

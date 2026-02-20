@@ -12,13 +12,40 @@ interface DashboardProps {
   onDeleteProperty: (name: string) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ 
-  records, 
-  onReset, 
-  properties, 
-  onAddProperty, 
-  onUpdateProperty, 
-  onDeleteProperty 
+const GaugeChart: React.FC<{ value: number }> = ({ value }) => {
+  const radius = 40;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (value / 100) * circumference;
+
+  return (
+    <div className="relative flex items-center justify-center w-32 h-32">
+      <svg className="w-full h-full transform -rotate-90">
+        <circle
+          cx="64" cy="64" r={radius}
+          className="stroke-slate-100 dark:stroke-slate-800 fill-none"
+          strokeWidth="10"
+        />
+        <circle
+          cx="64" cy="64" r={radius}
+          className="stroke-emerald-500 fill-none transition-all duration-1000 ease-out"
+          strokeWidth="10"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+        />
+      </svg>
+      <div className="absolute text-xl font-black text-slate-900 dark:text-white">{value.toFixed(1)}%</div>
+    </div>
+  );
+};
+
+const Dashboard: React.FC<DashboardProps> = ({
+  records,
+  onReset,
+  properties,
+  onAddProperty,
+  onUpdateProperty,
+  onDeleteProperty
 }) => {
   const [newPropName, setNewPropName] = useState('');
   const [editingProp, setEditingProp] = useState<string | null>(null);
@@ -26,8 +53,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const highRisk = records.filter(r => r.riskLevel === RiskLevel.HIGH).length;
   const resolvedCount = records.filter(r => r.status === 'Resolved').length;
-  const passRateVal = records.length > 0 
-    ? (records.filter(r => r.riskLevel !== RiskLevel.HIGH).length / records.length) * 100 
+  const passRateVal = records.length > 0
+    ? (records.filter(r => r.riskLevel !== RiskLevel.HIGH).length / records.length) * 100
     : 100;
 
   // Enriched Data for Chart
@@ -61,40 +88,40 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const stats = [
-    { 
-      label: 'Total Audits', 
-      value: records.length, 
-      colorClass: 'text-slate-800 dark:text-slate-100', 
+    {
+      label: 'Total Audits',
+      value: records.length,
+      colorClass: 'text-slate-800 dark:text-slate-100',
       bg: 'bg-white/80 dark:bg-slate-900/80',
       border: 'border-white/60 dark:border-slate-700/60',
       icon: (
         <svg className="w-6 h-6 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
       )
     },
-    { 
-      label: 'Critical Risks', 
-      value: highRisk, 
-      colorClass: 'text-red-600 dark:text-red-400', 
+    {
+      label: 'Critical Risks',
+      value: highRisk,
+      colorClass: 'text-red-600 dark:text-red-400',
       bg: 'bg-red-50/80 dark:bg-red-900/20',
       border: 'border-red-100/60 dark:border-red-800/30',
       icon: (
         <svg className="w-6 h-6 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
       )
     },
-    { 
-      label: 'Pass Rate', 
-      value: `${passRateVal.toFixed(1)}%`, 
-      colorClass: 'text-emerald-600 dark:text-emerald-400', 
+    {
+      label: 'Integrity Index',
+      component: <GaugeChart value={passRateVal} />,
+      colorClass: 'text-emerald-600 dark:text-emerald-400',
       bg: 'bg-emerald-50/80 dark:bg-emerald-900/20',
       border: 'border-emerald-100/60 dark:border-emerald-800/30',
       icon: (
         <svg className="w-6 h-6 text-emerald-500 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
       )
     },
-    { 
-      label: 'Resolution', 
-      value: resolvedCount, 
-      colorClass: 'text-blue-600 dark:text-blue-400', 
+    {
+      label: 'Resolution',
+      value: resolvedCount,
+      colorClass: 'text-blue-600 dark:text-blue-400',
       bg: 'bg-blue-50/80 dark:bg-blue-900/20',
       border: 'border-blue-100/60 dark:border-blue-800/30',
       icon: (
@@ -112,14 +139,14 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-emerald-100 dark:border-emerald-900/50 px-5 py-2.5 rounded-2xl shadow-sm hover:shadow-md transition-all cursor-default">
-             <span className="relative flex h-3 w-3">
-               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-               <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-             </span>
-             <span className="text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest leading-none">System Operational</span>
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <span className="text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest leading-none">System Operational</span>
           </div>
           {onReset && (
-            <button 
+            <button
               onClick={onReset}
               className="text-[10px] font-black text-slate-400 hover:text-white hover:bg-red-500 uppercase tracking-[0.2em] transition-all border border-slate-200 dark:border-slate-700 px-5 py-2.5 rounded-2xl bg-white/50 dark:bg-slate-900/50 hover:border-red-500 hover:shadow-red-200 hover:shadow-lg"
             >
@@ -131,21 +158,27 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {stats.map((stat, i) => (
-          <div 
-            key={i} 
+          <div
+            key={i}
             className={`
               relative overflow-hidden ${stat.bg} backdrop-blur-2xl p-6 md:p-8 rounded-[2rem] 
               border-2 ${stat.border} shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 group
+              ${stat.component ? 'flex flex-col items-center justify-center pt-10' : ''}
             `}
           >
-            <div className="flex justify-between items-start mb-4 relative z-10">
+            <div className="absolute top-6 left-6 right-6 flex justify-between items-start z-10">
               <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">{stat.label}</p>
               <div className="p-2 bg-white/60 dark:bg-black/30 rounded-xl backdrop-blur-sm group-hover:scale-110 transition-transform shadow-sm">
                 {stat.icon}
               </div>
             </div>
-            <p className={`text-4xl md:text-5xl font-black ${stat.colorClass} tracking-tighter relative z-10`}>{stat.value}</p>
-            
+
+            {stat.component ? (
+              <div className="mt-4">{stat.component}</div>
+            ) : (
+              <p className={`text-4xl md:text-5xl font-black ${stat.colorClass} tracking-tighter relative z-10 mt-8`}>{stat.value}</p>
+            )}
+
             {/* Background decoration */}
             <div className="absolute -bottom-6 -right-6 opacity-5 rotate-12 scale-150 grayscale group-hover:grayscale-0 transition-all duration-700">
               {stat.icon}
@@ -158,9 +191,9 @@ const Dashboard: React.FC<DashboardProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <section className="lg:col-span-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl p-6 md:p-10 rounded-[2.5rem] border border-white/60 dark:border-slate-800 shadow-xl relative overflow-hidden ring-1 ring-slate-900/5 dark:ring-white/5">
           <div className="absolute top-0 right-0 p-8 opacity-[0.03] dark:opacity-[0.05]">
-            <svg className="w-64 h-64 dark:text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+            <svg className="w-64 h-64 dark:text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" /></svg>
           </div>
-          
+
           <div className="flex items-center gap-5 mb-10 relative z-10">
             <div className="w-14 h-14 bg-gradient-to-br from-slate-800 to-black dark:from-slate-700 dark:to-slate-900 rounded-2xl flex items-center justify-center text-2xl shadow-lg text-white ring-4 ring-slate-100 dark:ring-slate-800">
               📈
@@ -170,25 +203,25 @@ const Dashboard: React.FC<DashboardProps> = ({
               <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mt-1">Sector Specific Failure Analysis</p>
             </div>
           </div>
-          
+
           <div className="h-80 relative z-10 w-full bg-slate-50/50 dark:bg-black/40 rounded-2xl border border-slate-100 dark:border-slate-700 overflow-hidden p-4">
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94a3b8" opacity={0.1} />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} 
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
                     dy={10}
                   />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} 
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
                   />
-                  <Tooltip 
+                  <Tooltip
                     cursor={{ fill: '#f1f5f9', opacity: 0.4 }}
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                   />
@@ -208,7 +241,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         </section>
 
         <section className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl p-6 md:p-8 rounded-[2.5rem] border border-white/60 dark:border-slate-800 shadow-xl flex flex-col h-full relative overflow-hidden ring-1 ring-slate-900/5 dark:ring-white/5">
-           <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-slate-900 dark:via-slate-900/90 z-10 pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-slate-900 dark:via-slate-900/90 z-10 pointer-events-none"></div>
 
           <div className="flex items-center gap-4 mb-8">
             <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center text-2xl shadow-sm border border-blue-100 dark:border-blue-800 ring-4 ring-blue-50/50 dark:ring-blue-900/20">
@@ -225,8 +258,8 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div key={p} className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 group transition-all hover:bg-blue-50/50 dark:hover:bg-slate-700 hover:shadow-lg hover:border-blue-200 dark:hover:border-slate-600 hover:-translate-x-1 shadow-sm">
                 {editingProp === p ? (
                   <div className="flex-1 flex gap-2 animate-in fade-in duration-200">
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       className="flex-1 bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-600 rounded-xl px-4 py-2 text-sm font-bold focus:outline-none focus:border-blue-500 shadow-inner text-slate-700 dark:text-white"
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
@@ -256,22 +289,22 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           <div className="absolute bottom-6 left-6 right-6 z-20">
-             <div className="relative group">
-                <input 
-                  type="text" 
-                  placeholder="Register New Property..."
-                  className="w-full pl-5 pr-24 py-4 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus:border-blue-500 focus:outline-none font-bold text-sm shadow-xl transition-all hover:border-blue-200 dark:hover:border-slate-600 text-slate-900 dark:text-white dark:placeholder-slate-500"
-                  value={newPropName}
-                  onChange={(e) => setNewPropName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                />
-                <button 
-                  onClick={handleAdd}
-                  className="absolute right-2 top-2 bottom-2 px-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 dark:hover:bg-slate-200 transition-colors shadow-lg active:scale-95 flex items-center gap-2"
-                >
-                  Add <span className="text-xs">+</span>
-                </button>
-             </div>
+            <div className="relative group">
+              <input
+                type="text"
+                placeholder="Register New Property..."
+                className="w-full pl-5 pr-24 py-4 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus:border-blue-500 focus:outline-none font-bold text-sm shadow-xl transition-all hover:border-blue-200 dark:hover:border-slate-600 text-slate-900 dark:text-white dark:placeholder-slate-500"
+                value={newPropName}
+                onChange={(e) => setNewPropName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+              />
+              <button
+                onClick={handleAdd}
+                className="absolute right-2 top-2 bottom-2 px-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 dark:hover:bg-slate-200 transition-colors shadow-lg active:scale-95 flex items-center gap-2"
+              >
+                Add <span className="text-xs">+</span>
+              </button>
+            </div>
           </div>
         </section>
       </div>

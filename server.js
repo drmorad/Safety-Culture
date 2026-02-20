@@ -35,7 +35,7 @@ app.post("/analyze-photo", async (req, res) => {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-1.5-pro",
       contents: {
         parts: [
           {
